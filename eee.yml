@@ -1,0 +1,59 @@
+
+name: Build iOS Toolbox Unsigned IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Unsigned iPhone IPA
+    runs-on: macos-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check Xcode
+        run: xcodebuild -version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Compile for physical iPhones
+        run: |
+          xcodebuild \
+            -project iOSToolbox.xcodeproj \
+            -scheme iOSToolbox \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Package unsigned IPA
+        run: |
+          mkdir -p build/ipa/Payload
+          cp -R build/DerivedData/Build/Products/Release-iphoneos/iOSToolbox.app build/ipa/Payload/
+          cd build/ipa
+          /usr/bin/ditto -c -k --sequesterRsrc --keepParent Payload iOS-Toolbox-Unsigned.ipa
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: iOS-Toolbox-Unsigned-IPA
+          path: build/ipa/iOS-Toolbox-Unsigned.ipa
+          if-no-files-found: error
+          retention-days: 14
