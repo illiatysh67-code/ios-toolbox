@@ -1,49 +1,45 @@
 
-name: Build iOS Toolbox
+name: Build Unsigned iOS IPA
 
 on:
-  workflow_dispatch:
   push:
-    branches:
-      - main
-
-permissions:
-  contents: read
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   build:
-    name: Compile iOS Toolbox
-    runs-on: macos-latest
-    timeout-minutes: 30
+    runs-on: macos-15
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Check Xcode
-        run: xcodebuild -version
 
       - name: Install XcodeGen
         run: brew install xcodegen
 
-      - name: Generate Xcode project
-        run: xcodegen generate
+      - name: Generate project
+        run: xcodegen generate --spec project.yml
 
-      - name: Build iOS Simulator app
+      - name: Build iPhone app
         run: |
           xcodebuild \
             -project iOSToolbox.xcodeproj \
             -scheme iOSToolbox \
-            -sdk iphonesimulator \
-            -destination 'generic/platform=iOS Simulator' \
-            -derivedDataPath build/DerivedData \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             build
 
-      - name: Upload compiled app
+      - name: Create unsigned IPA
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/iOSToolbox.app Payload/
+          /usr/bin/ditto -c -k --sequesterRsrc --keepParent Payload iOSToolbox-unsigned.ipa
+
+      - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: iOS-Toolbox-Build
-          path: build/DerivedData/Build/Products/Debug-iphonesimulator/iOSToolbox.app
+          name: iOSToolbox-Unsigned-IPA
+          path: iOSToolbox-unsigned.ipa
           if-no-files-found: error
-          retention-days: 14
