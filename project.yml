@@ -1,0 +1,21 @@
+
+name: iOSToolbox
+
+options:
+  bundleIdPrefix: com.illia
+  deploymentTarget:
+    iOS: "16.0"
+
+targets:
+  iOSToolbox:
+    type: application
+    platform: iOS
+    sources:
+      - path: iOSToolboxApp.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.illia.iostoolbox
+        INFOPLIST_KEY_CFBundleDisplayName: iOS Toolbox
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1,2"
